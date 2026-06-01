@@ -205,6 +205,14 @@ export class ProxyServer {
   }
 
 
+  /** Pick a sensible default model slug for config.toml: first visible catalog model. */
+  private getDefaultModelSlug(): string {
+    const catalog = this.getModelCatalog();
+    const models = catalog.models || [];
+    const visible = models.find((m: any) => m.visibility === "list");
+    return (visible || models[0])?.slug || "gpt-5-codex";
+  }
+
   private findProvider(model: string, catalogEntry?: any): ProviderConfig | null {
     if (catalogEntry?.provider) {
       return this.config.providers.find(p => p.name === catalogEntry.provider) || null;
@@ -220,6 +228,43 @@ export class ProxyServer {
       return process.env[raw.slice(1)] || "";
     }
     return raw;
+  }
+
+  /**
+   * Probe a provider endpoint: validates the base_url + api_key by calling
+   * GET {base_url}/models. Returns { ok, models?, error?, status? }.
+   * Used by the dashboard "Test connection" and "Fetch models" buttons.
+   */
+  private async probeProvider(baseUrl: string, apiKey: string): Promise<{ ok: boolean; models?: string[]; error?: string; status?: number }> {
+    if (!baseUrl || !/^https?:\/\//i.test(baseUrl)) {
+      return { ok: false, error: "Base URL 无效，必须以 http(s):// 开头 / Invalid base URL" };
+    }
+    const url = baseUrl.replace(/\/+$/, "") + "/models";
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+      const r = await fetch(url, { method: "GET", headers, signal: controller.signal });
+      const text = await r.text();
+      if (!r.ok) {
+        let detail = text.slice(0, 200);
+        try { const j = JSON.parse(text); detail = j.error?.message || j.error || j.message || detail; } catch {}
+        return { ok: false, status: r.status, error: `HTTP ${r.status}: ${detail}` };
+      }
+      let json: any;
+      try { json = JSON.parse(text); } catch { return { ok: false, error: "返回内容不是合法 JSON / Response is not valid JSON" }; }
+      const list = Array.isArray(json?.data) ? json.data : (Array.isArray(json?.models) ? json.models : (Array.isArray(json) ? json : []));
+      const models = list
+        .map((m: any) => (typeof m === "string" ? m : (m?.id || m?.name || m?.model)))
+        .filter((m: any) => typeof m === "string" && m.length > 0);
+      return { ok: true, models };
+    } catch (err: any) {
+      const msg = err?.name === "AbortError" ? "请求超时（12秒）/ Request timed out" : (err?.message || String(err));
+      return { ok: false, error: `连接失败 / Connection failed: ${msg}` };
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private autoPatchCodexConfig() {
@@ -239,27 +284,48 @@ export class ProxyServer {
 
     try {
       const tomlContent = readFileSync(tomlPath, "utf-8");
+      const alreadyPatched = tomlContent.includes("# >>> opencodex managed >>>");
 
-      if (tomlContent.includes("# >>> opencodex managed >>>")) {
-        return;
+      // Only back up the very first time we touch a user's native config.
+      if (!alreadyPatched) {
+        const tomlBackupPath = tomlPath + ".bak_" + Date.now();
+        writeFileSync(tomlBackupPath, tomlContent, "utf-8");
+        console.log(`[OpenCodex] Created backup of config.toml at ${tomlBackupPath}`);
+        console.log(`[OpenCodex] Detecting unpatched config.toml. Performing surgical auto-patch...`);
+      } else {
+        console.log(`[OpenCodex] Refreshing managed config.toml blocks (catalog path / default model)...`);
       }
 
-      console.log(`[OpenCodex] Detecting unpatched config.toml. Performing surgical auto-patch...`);
-
-      const tomlBackupPath = tomlPath + ".bak_" + Date.now();
-      writeFileSync(tomlBackupPath, tomlContent, "utf-8");
-      console.log(`[OpenCodex] Created backup of config.toml at ${tomlBackupPath}`);
-
       let patchedToml = stripManagedBlocks(tomlContent);
+      patchedToml = this.buildManagedTop(catalogPath) + "\n" + patchedToml + "\n\n" + this.buildManagedProvider();
+      writeFileSync(tomlPath, patchedToml, "utf-8");
+      console.log(`[OpenCodex] Successfully patched config.toml to route via OpenCodex!`);
 
-      const managedTop = `# >>> opencodex managed >>>
-model = "deepseek-v4-flash"
+      // Only auto-restart on the first patch so startup isn't disruptive on every launch.
+      if (!alreadyPatched) {
+        this.restartCodexDesktop();
+      }
+    } catch (err: any) {
+      console.error(`[OpenCodex] Failed to auto-patch config.toml: ${err.message}`);
+    }
+  }
+
+  /** TOML escape: backslashes and double quotes (handles spaces in usernames/paths). */
+  private tomlEscape(s: string): string {
+    return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+
+  private buildManagedTop(catalogPath: string): string {
+    return `# >>> opencodex managed >>>
+model = "${this.tomlEscape(this.getDefaultModelSlug())}"
 model_provider = "opencodex"
-model_catalog_json = "${catalogPath}"
+model_catalog_json = "${this.tomlEscape(catalogPath)}"
 # <<< opencodex managed <<<
 `;
+  }
 
-      const managedProvider = `# >>> opencodex managed >>>
+  private buildManagedProvider(): string {
+    return `# >>> opencodex managed >>>
 [model_providers.opencodex]
 name = "OpenCodex"
 base_url = "http://localhost:8765/v1"
@@ -271,15 +337,6 @@ stream_max_retries = 3
 stream_idle_timeout_ms = 600000
 # <<< opencodex managed <<<
 `;
-
-      patchedToml = managedTop + "\n" + patchedToml + "\n\n" + managedProvider;
-      writeFileSync(tomlPath, patchedToml, "utf-8");
-      console.log(`[OpenCodex] Successfully patched config.toml to route via OpenCodex!`);
-
-      this.restartCodexDesktop();
-    } catch (err: any) {
-      console.error(`[OpenCodex] Failed to auto-patch config.toml: ${err.message}`);
-    }
   }
 
   public patchCodexConfig() {
@@ -289,27 +346,9 @@ stream_idle_timeout_ms = 600000
     try {
       const content = readFileSync(tomlPath, "utf-8");
       let patched = stripManagedBlocks(content);
-      const managedTop = `# >>> opencodex managed >>>
-model = "deepseek-v4-flash"
-model_provider = "opencodex"
-model_catalog_json = "${catalogPath}"
-# <<< opencodex managed <<<
-`;
-      const managedProvider = `# >>> opencodex managed >>>
-[model_providers.opencodex]
-name = "OpenCodex"
-base_url = "http://localhost:8765/v1"
-wire_api = "responses"
-requires_openai_auth = true
-experimental_bearer_token = "dummy"
-request_max_retries = 3
-stream_max_retries = 3
-stream_idle_timeout_ms = 600000
-# <<< opencodex managed <<<
-`;
-      patched = managedTop + "\n" + patched + "\n\n" + managedProvider;
+      patched = this.buildManagedTop(catalogPath) + "\n" + patched + "\n\n" + this.buildManagedProvider();
       writeFileSync(tomlPath, patched, "utf-8");
-      console.log(`[OpenCodex] Patched config.toml with opencodex provider.`);
+      console.log(`[OpenCodex] Patched config.toml with opencodex provider (default model: ${this.getDefaultModelSlug()}).`);
     } catch (err: any) {
       console.error(`[OpenCodex] Failed to patch config.toml: ${err.message}`);
     }
@@ -317,6 +356,22 @@ stream_idle_timeout_ms = 600000
 
   public restartCodexDesktop() {
     console.log("[OpenCodex] Executing background cold-restart of Codex Desktop...");
+    if (process.platform === "win32") {
+      // Best-effort on Windows: kill any Codex* processes and relaunch via shell.
+      const psCmd = [
+        "Get-Process Codex* -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue;",
+        "Start-Sleep -Milliseconds 1500;",
+        "Start-Process 'Codex' -ErrorAction SilentlyContinue"
+      ].join(" ");
+      exec(`powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "${psCmd}"`, (err) => {
+        if (err) {
+          console.error(`[OpenCodex] Codex restart on Windows completed with status: ${err.message}`);
+        } else {
+          console.log("[OpenCodex] Codex Desktop restart attempted on Windows.");
+        }
+      });
+      return;
+    }
     const cmd = 'killall Codex "Codex Helper" "Codex Helper (Renderer)" "Codex Helper (GPU)" SkyComputerUseClient SkyComputerUseService bare-modifier-monitor 2>/dev/null; kill -9 $(ps aux | grep -i "codex app-server" | grep -v "grep" | awk \'{print $2}\') 2>/dev/null; sleep 1.5; open -a Codex';
     exec(cmd, (err, stdout, stderr) => {
       if (err) {
@@ -428,6 +483,43 @@ stream_idle_timeout_ms = 600000
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));
       }
+      return;
+    }
+
+    // ─── Validate a provider's base_url + api_key by hitting its /models ───
+    if (path === "/api/provider/test" && req.method === "POST") {
+      (async () => {
+        try {
+          const data = JSON.parse(body || "{}");
+          const result = await this.probeProvider(data.base_url, this.resolveKey(data.api_key || ""));
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        } catch (err: any) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err.message }));
+        }
+      })();
+      return;
+    }
+
+    // ─── Fetch the live model list from a provider's /models endpoint ───
+    if (path === "/api/provider/fetch-models" && req.method === "POST") {
+      (async () => {
+        try {
+          const data = JSON.parse(body || "{}");
+          const result = await this.probeProvider(data.base_url, this.resolveKey(data.api_key || ""));
+          if (!result.ok) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+            return;
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, models: result.models || [] }));
+        } catch (err: any) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err.message }));
+        }
+      })();
       return;
     }
 

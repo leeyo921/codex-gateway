@@ -10,11 +10,41 @@ import { join } from "node:path";
 
 export class ScreenshotTaker {
   async capture(): Promise<Buffer> {
+    if (process.platform === "win32") {
+      return this.windowsCapture();
+    }
     try {
       return this.swiftCapture();
     } catch (err: any) {
       console.error("[OpenCodex-Screenshot] Swift CGDisplay capture failed, falling back to screencapture utility:", err.message);
       return this.scCapture();
+    }
+  }
+
+  private windowsCapture(): Buffer {
+    const out = join(tmpdir(), `oc-shot-${Date.now()}.png`);
+    const ps = join(tmpdir(), `oc-shot-${Date.now()}.ps1`);
+    const script = [
+      "Add-Type -AssemblyName System.Windows.Forms,System.Drawing",
+      "$b = [System.Windows.Forms.SystemInformation]::VirtualScreen",
+      "$bmp = New-Object System.Drawing.Bitmap($b.Width, $b.Height)",
+      "$g = [System.Drawing.Graphics]::FromImage($bmp)",
+      "$g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)",
+      "$bmp.Save($args[0], [System.Drawing.Imaging.ImageFormat]::Png)",
+      "$g.Dispose(); $bmp.Dispose()"
+    ].join("\n");
+    try {
+      writeFileSync(ps, script, "utf-8");
+      const r = spawnSync(
+        "powershell.exe",
+        ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", ps, out],
+        { timeout: 10000, windowsHide: true }
+      );
+      if (r.status !== 0) throw new Error(r.stderr?.toString() || "PowerShell screenshot failed");
+      return readFileSync(out);
+    } finally {
+      try { unlinkSync(ps); } catch {}
+      try { unlinkSync(out); } catch {}
     }
   }
 

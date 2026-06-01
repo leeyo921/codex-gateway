@@ -904,6 +904,11 @@ function _imageHash(b64Data: string): string {
 }
 
 function sipsCompressB64(b64Data: string): string {
+  // `sips` is macOS-only. On other platforms, skip resizing and use the original
+  // image (vision bridge still works, just without server-side downscaling).
+  if (process.platform !== "darwin") {
+    return b64Data;
+  }
   const tempDir = os.tmpdir();
   const uniqueId = crypto.randomBytes(8).toString("hex");
   const tempInputPath = path.join(tempDir, `ocx_in_${uniqueId}.png`);

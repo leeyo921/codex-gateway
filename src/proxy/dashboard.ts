@@ -724,6 +724,21 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
     </div>
   </div>
 
+  <div class="modal-overlay" id="model-picker-modal">
+    <div class="modal-box" style="max-width:520px;text-align:left;">
+      <p id="model-picker-title" style="font-weight:600;">选择模型</p>
+      <div style="display:flex;gap:0.5rem;">
+        <button type="button" class="console-btn" onclick="modelPickerSelectAll(true)">全选</button>
+        <button type="button" class="console-btn" onclick="modelPickerSelectAll(false)">取消全选</button>
+      </div>
+      <div id="model-picker-list" style="display:flex;flex-direction:column;gap:0.25rem;max-height:340px;overflow-y:auto;margin:0.5rem 0;padding-right:0.4rem;"></div>
+      <div class="modal-actions">
+        <button class="modal-btn-cancel" onclick="closeModelPicker()">取消 / Cancel</button>
+        <button class="modal-btn-confirm" onclick="confirmModelPicker()">添加选中 / Add</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // i18n Dictionary
     const i18nDict = {
@@ -860,20 +875,133 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
       setLanguage(currentLang === 'zh' ? 'en' : 'zh');
     }
 
-    // Handles provider select dropdown changes
+    // Build a provider row with Test-connection + Fetch-models controls
     function addProviderRow(name, url, key) {
       const container = document.getElementById('providers-container');
-      const idx = container.children.length;
       const div = document.createElement('div');
       div.className = 'provider-row';
       div.style.cssText = 'display:flex;gap:0.5rem;align-items:center;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.6rem;flex-wrap:wrap;';
+      const inputStyle = 'background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);padding:0.5rem;border-radius:6px;color:#fff;font-family:Outfit,sans-serif;font-size:0.85rem;';
       div.innerHTML = \`
-        <input class="prov-name" placeholder="name" value="\${name || ''}" style="width:90px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);padding:0.5rem;border-radius:6px;color:#fff;font-family:Outfit,sans-serif;font-size:0.85rem;">
-        <input class="prov-url" placeholder="https://..." value="\${url || ''}" style="flex:1;min-width:120px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);padding:0.5rem;border-radius:6px;color:#fff;font-family:Outfit,sans-serif;font-size:0.85rem;">
-        <input class="prov-key" type="password" placeholder="sk-..." value="\${key || ''}" style="flex:1;min-width:100px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);padding:0.5rem;border-radius:6px;color:#fff;font-family:Outfit,sans-serif;font-size:0.85rem;">
-        <button type="button" onclick="this.parentElement.remove()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:0.8rem;">✕</button>
+        <input class="prov-name" placeholder="名称/name" value="\${name || ''}" style="width:90px;\${inputStyle}">
+        <input class="prov-url" placeholder="https://api.example.com/v1" value="\${url || ''}" style="flex:1;min-width:160px;\${inputStyle}">
+        <input class="prov-key" type="password" placeholder="sk-..." value="\${key || ''}" style="flex:1;min-width:110px;\${inputStyle}">
+        <button type="button" class="prov-test-btn" onclick="testProvider(this)" title="验证地址和 Token" style="background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.3);color:var(--color-secondary);padding:0.45rem 0.7rem;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;white-space:nowrap;">⚡ 测试</button>
+        <button type="button" class="prov-fetch-btn" onclick="fetchProviderModels(this)" title="从该供应商拉取模型列表" style="background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);color:var(--color-primary);padding:0.45rem 0.7rem;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;white-space:nowrap;">⬇ 拉取模型</button>
+        <button type="button" onclick="this.parentElement.remove()" title="删除" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:0.8rem;">✕</button>
+        <span class="prov-status" style="flex-basis:100%;font-size:0.75rem;color:var(--color-text-muted);"></span>
       \`;
       container.appendChild(div);
+    }
+
+    // Read a provider row's current name/url/key
+    function readProviderRow(btn) {
+      const row = btn.closest('.provider-row');
+      return {
+        row,
+        name: row.querySelector('.prov-name').value.trim(),
+        base_url: row.querySelector('.prov-url').value.trim(),
+        api_key: row.querySelector('.prov-key').value.trim(),
+        statusEl: row.querySelector('.prov-status')
+      };
+    }
+
+    function setProvStatus(el, text, color) {
+      el.innerText = text;
+      el.style.color = color || 'var(--color-text-muted)';
+    }
+
+    // Validate base_url + api_key against the provider's /models endpoint
+    async function testProvider(btn) {
+      const { base_url, api_key, statusEl } = readProviderRow(btn);
+      if (!base_url) { setProvStatus(statusEl, '请先填写接口地址 Base URL', '#f59e0b'); return; }
+      const original = btn.innerText;
+      btn.disabled = true; btn.innerText = '测试中...';
+      setProvStatus(statusEl, '正在连接 / Testing...', 'var(--color-secondary)');
+      try {
+        const r = await fetch('/api/provider/test', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base_url, api_key })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          setProvStatus(statusEl, \`✅ 连接成功，发现 \${(d.models||[]).length} 个模型\`, 'var(--color-success)');
+        } else {
+          setProvStatus(statusEl, '❌ ' + (d.error || '连接失败'), 'var(--color-danger)');
+        }
+      } catch (err) {
+        setProvStatus(statusEl, '❌ ' + err.message, 'var(--color-danger)');
+      } finally {
+        btn.disabled = false; btn.innerText = original;
+      }
+    }
+
+    // Fetch model list and open a checklist modal so the user picks which to add
+    async function fetchProviderModels(btn) {
+      const { name, base_url, api_key, statusEl } = readProviderRow(btn);
+      if (!base_url) { setProvStatus(statusEl, '请先填写接口地址 Base URL', '#f59e0b'); return; }
+      if (!name) { setProvStatus(statusEl, '请先填写供应商名称（用于 provider:model）', '#f59e0b'); return; }
+      const original = btn.innerText;
+      btn.disabled = true; btn.innerText = '拉取中...';
+      setProvStatus(statusEl, '正在拉取模型列表...', 'var(--color-primary)');
+      try {
+        const r = await fetch('/api/provider/fetch-models', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base_url, api_key })
+        });
+        const d = await r.json();
+        if (d.ok && Array.isArray(d.models) && d.models.length) {
+          setProvStatus(statusEl, \`✅ 拉取到 \${d.models.length} 个模型，请勾选\`, 'var(--color-success)');
+          openModelPicker(name, d.models);
+        } else if (d.ok) {
+          setProvStatus(statusEl, '该供应商未返回任何模型', '#f59e0b');
+        } else {
+          setProvStatus(statusEl, '❌ ' + (d.error || '拉取失败'), 'var(--color-danger)');
+        }
+      } catch (err) {
+        setProvStatus(statusEl, '❌ ' + err.message, 'var(--color-danger)');
+      } finally {
+        btn.disabled = false; btn.innerText = original;
+      }
+    }
+
+    // Model picker modal: lets the user select fetched models to append to the textarea
+    function openModelPicker(provider, models) {
+      const overlay = document.getElementById('model-picker-modal');
+      const listEl = document.getElementById('model-picker-list');
+      const titleEl = document.getElementById('model-picker-title');
+      titleEl.innerText = \`从 "\${provider}" 选择模型（共 \${models.length} 个）\`;
+      const existing = new Set(document.getElementById('model-names').value.split('\\n').map(s => s.trim()));
+      listEl.innerHTML = models.map((m) => {
+        const full = provider + ':' + m;
+        const checked = existing.has(full) ? 'checked' : '';
+        return \`<label style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.6rem;border-radius:8px;cursor:pointer;background:rgba(255,255,255,0.02);">
+          <input type="checkbox" class="mp-cb" value="\${m}" \${checked} style="width:16px;height:16px;accent-color:var(--color-secondary);cursor:pointer;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">\${m}</span>
+        </label>\`;
+      }).join('');
+      overlay.dataset.provider = provider;
+      overlay.classList.add('show');
+    }
+
+    function modelPickerSelectAll(select) {
+      document.querySelectorAll('#model-picker-list .mp-cb').forEach(cb => cb.checked = select);
+    }
+
+    function confirmModelPicker() {
+      const overlay = document.getElementById('model-picker-modal');
+      const provider = overlay.dataset.provider;
+      const chosen = Array.from(document.querySelectorAll('#model-picker-list .mp-cb:checked')).map(cb => cb.value);
+      const ta = document.getElementById('model-names');
+      const lines = new Set(ta.value.split('\\n').map(s => s.trim()).filter(Boolean));
+      chosen.forEach(m => lines.add(provider + ':' + m));
+      ta.value = Array.from(lines).join('\\n');
+      overlay.classList.remove('show');
+      showToast(currentLang === 'zh' ? \`已添加 \${chosen.length} 个模型，记得点击"保存"\` : \`Added \${chosen.length} models — remember to Save\`);
+    }
+
+    function closeModelPicker() {
+      document.getElementById('model-picker-modal').classList.remove('show');
     }
 
     function togglePass(id) {

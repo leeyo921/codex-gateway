@@ -189,7 +189,11 @@ class OpenCodex {
     const url = "http://localhost:8765/dashboard";
     console.log(`[OpenCodex] Dashboard → ${url}`);
     try {
-      execSync(`open "${url}"`, { timeout: 3000 });
+      const opener =
+        process.platform === "win32" ? `start "" "${url}"` :
+        process.platform === "darwin" ? `open "${url}"` :
+        `xdg-open "${url}"`;
+      execSync(opener, { timeout: 3000, shell: process.platform === "win32" ? "cmd.exe" : undefined } as any);
     } catch {}
     const transport = new StdioServerTransport();
     await this.mcp.connect(transport);
