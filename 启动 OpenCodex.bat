@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
+setlocal
 REM OpenCodex 一键启动器（Windows 双击即可运行）
 REM One-click launcher for OpenCodex on Windows.
 cd /d "%~dp0"
@@ -21,7 +22,21 @@ if errorlevel 1 (
 )
 
 for /f "delims=" %%v in ('node -v') do echo [OK] Node.js %%v
-echo.
+
+REM 1b) 把 node.exe 所在目录加入 PATH，确保 npm 一定可用
+REM     Add node.exe directory to PATH so npm.cmd next to it resolves.
+for /f "delims=" %%i in ('where node 2^>nul') do if not defined NODE_EXE set "NODE_EXE=%%i"
+for %%i in ("%NODE_EXE%") do set "NODE_DIR=%%~dpi"
+set "PATH=%NODE_DIR%;%PATH%"
+
+where npm >nul 2>nul
+if errorlevel 1 (
+  echo [!] 在 node 目录下仍未找到 npm / npm not found next to node.exe.
+  echo     Node 目录 / Node dir: %NODE_DIR%
+  echo.
+  pause
+  exit /b 1
+)
 
 REM 2) 安装依赖（仅首次）/ Install deps (first run only)
 if not exist "node_modules" (
