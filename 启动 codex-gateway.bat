@@ -1,12 +1,12 @@
 @echo off
 chcp 65001 >nul
 setlocal
-REM OpenCodex 一键启动器（Windows 双击即可运行）
-REM One-click launcher for OpenCodex on Windows.
+REM codex-gateway 一键启动器（Windows 双击即可运行）
+REM One-click launcher for codex-gateway on Windows.
 cd /d "%~dp0"
 
 echo ============================================
-echo    OpenCodex 启动器 / Launcher (Windows)
+echo    codex-gateway 启动器 / Launcher (Windows)
 echo ============================================
 echo.
 
@@ -53,7 +53,7 @@ if not exist "dist\server.js" (
 )
 
 REM 4) 启动 / Start
-echo [*] 正在启动 OpenCodex 网关... / Starting gateway...
+echo [*] 正在启动 codex-gateway 网关... / Starting gateway...
 echo     控制面板 / Dashboard: http://localhost:8765/dashboard
 echo     ^(保持此窗口开启即代表服务运行中 / Keep this window open^)
 echo.

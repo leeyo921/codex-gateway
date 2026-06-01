@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# OpenCodex 一键启动器（macOS 双击即可运行）
-# One-click launcher for OpenCodex on macOS — just double-click this file.
+# codex-gateway 一键启动器（macOS 双击即可运行）
+# One-click launcher for codex-gateway on macOS — just double-click this file.
 #
 # 它会自动：检查 Node.js → 安装依赖 → 编译 → 启动网关 → 打开控制面板
 # It will: check Node.js -> install deps -> build -> start gateway -> open dashboard
@@ -11,7 +11,7 @@ set -e
 cd "$(dirname "$0")"
 
 echo "============================================"
-echo "   OpenCodex 启动器 / Launcher"
+echo "   codex-gateway 启动器 / Launcher"
 echo "============================================"
 echo ""
 
@@ -52,7 +52,7 @@ if [ ! -f "dist/server.js" ] || [ "src/server.ts" -nt "dist/server.js" ]; then
 fi
 
 # 4) 启动 / Start
-echo "🚀 正在启动 OpenCodex 网关... / Starting OpenCodex gateway..."
+echo "🚀 正在启动 codex-gateway 网关... / Starting codex-gateway gateway..."
 echo "   控制面板将自动打开 / Dashboard will open automatically:"
 echo "   http://localhost:8765/dashboard"
 echo ""

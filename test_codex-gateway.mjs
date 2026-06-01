@@ -1,4 +1,4 @@
-// OpenCodex Core Verification Test Suite
+// codex-gateway Core Verification Test Suite
 // Verifies screenshot capture, OS mouse/keyboard actions, and Proxy Server binding.
 
 import { ProxyServer } from "./dist/proxy/index.js";
@@ -6,7 +6,7 @@ import { ScreenshotTaker } from "./dist/cu/screenshot.js";
 import { ActionPerformer } from "./dist/cu/actions.js";
 
 async function main() {
-  console.log("🧪 Starting OpenCodex Core Integration Verification\n");
+  console.log("🧪 Starting codex-gateway Core Integration Verification\n");
 
   // 1. Screenshot Capture Verification
   console.log("📸 [1/4] Verifying Screenshot Capture...");

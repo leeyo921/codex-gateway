@@ -1,4 +1,4 @@
-# OpenCodex Beginner Simulation Test Flow 🧪
+# codex-gateway Beginner Simulation Test Flow 🧪
 
 [English](#english) | [简体中文](#简体中文)
 
@@ -6,16 +6,16 @@
 
 # English
 
-This document provides a step-by-step test flow to treat your current Codex Desktop setup as a **completely fresh, native beginner's installation**, and walk through the entire OpenCodex unlocking flow end-to-end.
+This document provides a step-by-step test flow to treat your current Codex Desktop setup as a **completely fresh, native beginner's installation**, and walk through the entire codex-gateway unlocking flow end-to-end.
 
 ---
 
 ## 🏁 Step 1: Simulate a Fresh, Native Codex State
 Before starting, we will reset your `config.toml` to a standard state (removing all custom proxy bindings) to simulate a beginner who has just installed Codex:
 
-1.  **Stop the active OpenCodex gateway**:
+1.  **Stop the active codex-gateway gateway**:
     ```bash
-    pm2 stop opencodex
+    pm2 stop codex-gateway
     ```
 2.  **Restore config.toml to native state**:
     We have prepared a helper command to clean up managed blocks from `config.toml`:
@@ -25,7 +25,7 @@ Before starting, we will reset your `config.toml` to a standard state (removing 
     const path = require("path");
     const tomlPath = path.join(process.env.HOME, ".codex", "config.toml");
     let content = fs.readFileSync(tomlPath, "utf-8");
-    content = content.replace(/# >>> opencodex managed >>>[\\s\\S]*?# <<< opencodex managed <<<\\n?/gi, "");
+    content = content.replace(/# >>> codex-gateway managed >>>[\\s\\S]*?# <<< codex-gateway managed <<<\\n?/gi, "");
     fs.writeFileSync(tomlPath, content.trim() + "\\n", "utf-8");
     console.log("✔ ~/.codex/config.toml successfully restored to Native/Fresh State!");
     '
@@ -34,12 +34,12 @@ Before starting, we will reset your `config.toml` to a standard state (removing 
 
 ---
 
-## 🚀 Step 2: Run the OpenCodex Setup Wizard (Beginner Simulation)
-Now, simulate a beginner running the OpenCodex setup wizard for the first time:
+## 🚀 Step 2: Run the codex-gateway Setup Wizard (Beginner Simulation)
+Now, simulate a beginner running the codex-gateway setup wizard for the first time:
 
 1.  **Run the interactive setup**:
     ```bash
-    cd /Users/aitabby/projects/opencodex
+    cd /Users/aitabby/projects/codex-gateway
     npm run setup
     ```
 2.  **Wizard Steps**:
@@ -61,7 +61,7 @@ Beginners compile and run the backend gateway daemon:
     ```
 2.  **Launch via PM2**:
     ```bash
-    pm2 start dist/server.js --name opencodex
+    pm2 start dist/server.js --name codex-gateway
     ```
 
 ---
@@ -90,7 +90,7 @@ Finally, test Codex Desktop's visual features using the text-only DeepSeek model
     > "Look at my current screen, find the browser icon or a folder, and double click on it."
 4.  **Watch the Magic Happen**:
     *   Codex will take a screenshot.
-    *   OpenCodex intercepts this screenshot, compresses it via `sips`, sends it to OpenCode `mimo-v2.5` to generate a high-fidelity visual description, and injects it back.
+    *   codex-gateway intercepts this screenshot, compresses it via `sips`, sends it to OpenCode `mimo-v2.5` to generate a high-fidelity visual description, and injects it back.
     *   DeepSeek understands the screen elements and outputs coordinates.
     *   Our MCP Action performer clicks on the coordinate natively on your macOS!
     *   Open your Web Dashboard to watch the terminal logs streaming in real-time as this happens!
@@ -99,16 +99,16 @@ Finally, test Codex Desktop's visual features using the text-only DeepSeek model
 
 # 简体中文
 
-本文档提供了一套完整的保姆级测试流程，将您当前的 Codex Desktop 模拟为**完全新手的原生干净安装状态**，并端到端走完 OpenCodex 的完整激活与视觉解锁过程。
+本文档提供了一套完整的保姆级测试流程，将您当前的 Codex Desktop 模拟为**完全新手的原生干净安装状态**，并端到端走完 codex-gateway 的完整激活与视觉解锁过程。
 
 ---
 
 ## 🏁 第一步：模拟新手的干净原生 Codex 状态
 在测试开始前，我们将还原您的 `config.toml`（清除所有自定义代理绑定），以完全模拟一个刚下载安装好 Codex 的新手状态：
 
-1.  **停止当前的 OpenCodex 网关**：
+1.  **停止当前的 codex-gateway 网关**：
     ```bash
-    pm2 stop opencodex
+    pm2 stop codex-gateway
     ```
 2.  **还原 config.toml 至原生纯净状态**：
     运行以下命令，删除 `config.toml` 中所有历史注入块：
@@ -118,7 +118,7 @@ Finally, test Codex Desktop's visual features using the text-only DeepSeek model
     const path = require("path");
     const tomlPath = path.join(process.env.HOME, ".codex", "config.toml");
     let content = fs.readFileSync(tomlPath, "utf-8");
-    content = content.replace(/# >>> opencodex managed >>>[\\s\\S]*?# <<< opencodex managed <<<\\n?/gi, "");
+    content = content.replace(/# >>> codex-gateway managed >>>[\\s\\S]*?# <<< codex-gateway managed <<<\\n?/gi, "");
     fs.writeFileSync(tomlPath, content.trim() + "\\n", "utf-8");
     console.log("✔ ~/.codex/config.toml 成功还原为原生干净状态！");
     '
@@ -127,12 +127,12 @@ Finally, test Codex Desktop's visual features using the text-only DeepSeek model
 
 ---
 
-## 🚀 第二步：运行 OpenCodex 安装向导（新手体验）
+## 🚀 第二步：运行 codex-gateway 安装向导（新手体验）
 现在，开始模拟新手第一次下载并运行向导：
 
 1.  **启动交互式安装**：
     ```bash
-    cd /Users/aitabby/projects/opencodex
+    cd /Users/aitabby/projects/codex-gateway
     npm run setup
     ```
 2.  **向导交互步骤**：
@@ -154,7 +154,7 @@ Finally, test Codex Desktop's visual features using the text-only DeepSeek model
     ```
 2.  **在 PM2 中启动服务**：
     ```bash
-    pm2 start dist/server.js --name opencodex
+    pm2 start dist/server.js --name codex-gateway
     ```
 
 ---

@@ -1,5 +1,5 @@
 /**
- * OpenCodex Screenshot Capture Utility
+ * codex-gateway Screenshot Capture Utility
  * Captures the main screen using macOS-native Swift CGDisplay API with standard fallback.
  */
 
@@ -16,7 +16,7 @@ export class ScreenshotTaker {
     try {
       return this.swiftCapture();
     } catch (err: any) {
-      console.error("[OpenCodex-Screenshot] Swift CGDisplay capture failed, falling back to screencapture utility:", err.message);
+      console.error("[codex-gateway-Screenshot] Swift CGDisplay capture failed, falling back to screencapture utility:", err.message);
       return this.scCapture();
     }
   }

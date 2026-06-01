@@ -1,9 +1,9 @@
-# OpenCodex 🚀
+# codex-gateway 🚀
 
 [English](#english) | [简体中文](#简体中文)
 
 <p align="center">
-  <img src="preview.png" alt="OpenCodex Dashboard" width="800">
+  <img src="preview.png" alt="codex-gateway Dashboard" width="800">
 </p>
 
 <p align="center">
@@ -14,7 +14,7 @@
 
 # English
 
-**OpenCodex** is a plug-and-play local gateway that unlocks Codex Desktop for third-party APIs, featuring a premium web dashboard, custom Computer Use engine, and Vision Bridge for text-only models.
+**codex-gateway** is a plug-and-play local gateway that unlocks Codex Desktop for third-party APIs, featuring a premium web dashboard, custom Computer Use engine, and Vision Bridge for text-only models.
 
 ## 🌟 Key Features
 
@@ -44,8 +44,8 @@
 ### Install & Run
 
 ```bash
-git clone https://github.com/AITabby/opencodex.git
-cd opencodex
+git clone https://github.com/AITabby/codex-gateway.git
+cd codex-gateway
 npm install
 npm start
 ```
@@ -56,7 +56,7 @@ Server starts, browser opens to the dashboard. Add your API key and model names,
 
 # 简体中文
 
-**OpenCodex** 是一款即插即用的本地网关，为 Codex Desktop 解锁第三方 API。配备高颜值 Web 控制台、自研 Computer Use 引擎，以及让纯文本模型也能看图操作的 Vision Bridge。
+**codex-gateway** 是一款即插即用的本地网关，为 Codex Desktop 解锁第三方 API。配备高颜值 Web 控制台、自研 Computer Use 引擎，以及让纯文本模型也能看图操作的 Vision Bridge。
 
 ## 🌟 核心特性
 
@@ -86,8 +86,8 @@ Server starts, browser opens to the dashboard. Add your API key and model names,
 ### 安装与启动
 
 ```bash
-git clone https://github.com/AITabby/opencodex.git
-cd opencodex
+git clone https://github.com/AITabby/codex-gateway.git
+cd codex-gateway
 npm install
 npm start
 ```

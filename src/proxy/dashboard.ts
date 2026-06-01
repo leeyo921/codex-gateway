@@ -1,5 +1,5 @@
 /**
- * OpenCodex Local Web Dashboard
+ * codex-gateway Local Web Dashboard
  * Served directly on http://localhost:8765/dashboard.
  * Features a high-fidelity futuristic glassmorphic UI, API management with provider dropdown, and live logs streaming via SSE.
  * Fully supports bilingual translation (English and Chinese).
@@ -11,7 +11,7 @@ export function getDashboardHtml(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenCodex Control Dashboard</title>
+  <title>codex-gateway Control Dashboard</title>
   <!-- Google Fonts Outfit & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -601,7 +601,7 @@ export function getDashboardHtml(): string {
       <div class="brand-section">
         <div class="logo-container">O</div>
         <div>
-          <h1 id="i18n-title">OpenCodex Gateway</h1>
+          <h1 id="i18n-title">codex-gateway Gateway</h1>
           <p id="i18n-subtitle" style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 500;">Beginner-Friendly Custom Model Control Panel</p>
         </div>
       </div>
@@ -743,7 +743,7 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
     // i18n Dictionary
     const i18nDict = {
       en: {
-        title: "OpenCodex Gateway",
+        title: "codex-gateway Gateway",
         subtitle: "Beginner-Friendly Custom Model Control Panel",
         status: "Active & Intercepting",
         panelApiTitle: "API Settings & Keys",
@@ -781,7 +781,7 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
         toastResetDone: "Reset complete. Codex restarting."
       },
       zh: {
-        title: "OpenCodex 统一网关",
+        title: "codex-gateway 统一网关",
         subtitle: "面向新手的自定义模型控制面板",
         status: "运行中 & 实时拦截",
         panelApiTitle: "API 密钥与接口设置",

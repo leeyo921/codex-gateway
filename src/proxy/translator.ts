@@ -1,5 +1,5 @@
 /**
- * OpenCodex Protocol Translation & Vision Bridge Layer
+ * codex-gateway Protocol Translation & Vision Bridge Layer
  * Handles translation between Anthropic-style Responses API and OpenAI-style Chat Completions API.
  * Integrates macOS-native `sips` for screenshot resizing/compression.
  * Injects MiMo-v2.5 multimodal descriptions to allow text-only models (like DeepSeek) to run Computer Use.
@@ -934,11 +934,11 @@ export async function describeImageB64(b64Data: string, config?: any): Promise<s
   
   const cached = DESCRIPTION_CACHE.get(h);
   if (cached && now - cached.ts < CACHE_TTL) {
-    console.error(`[OpenCodex-VisionBridge] Cache hit for image hash=${h}: ${cached.desc.slice(0, 80)}...`);
+    console.error(`[codex-gateway-VisionBridge] Cache hit for image hash=${h}: ${cached.desc.slice(0, 80)}...`);
     return cached.desc;
   }
 
-  console.error(`[OpenCodex-VisionBridge] Processing image base64, len=${b64Data?.length}. Compressing with sips...`);
+  console.error(`[codex-gateway-VisionBridge] Processing image base64, len=${b64Data?.length}. Compressing with sips...`);
 
   const optimizedB64 = sipsCompressB64(b64Data);
 
@@ -954,14 +954,14 @@ export async function describeImageB64(b64Data: string, config?: any): Promise<s
 
   const isLocal = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");
   if (!apiKey && !isLocal) {
-    console.error(`[OpenCodex-VisionBridge] No API key configured for vision fallback. Skipping.`);
+    console.error(`[codex-gateway-VisionBridge] No API key configured for vision fallback. Skipping.`);
     return null;
   }
 
   const visionUrl = `${baseUrl}/chat/completions`;
   const visionModel = opencodeProvider?.vision_model || "mimo-v2.5";
 
-  console.error(`[OpenCodex-VisionBridge] Calling ${visionModel} at ${visionUrl}`);
+  console.error(`[codex-gateway-VisionBridge] Calling ${visionModel} at ${visionUrl}`);
 
   try {
     const payload = {
@@ -993,7 +993,7 @@ export async function describeImageB64(b64Data: string, config?: any): Promise<s
     });
 
     if (!response.ok) {
-      console.error(`[OpenCodex-VisionBridge] OpenCode MiMo API error: ${response.status} ${response.statusText}`);
+      console.error(`[codex-gateway-VisionBridge] OpenCode MiMo API error: ${response.status} ${response.statusText}`);
       return null;
     }
 
@@ -1005,7 +1005,7 @@ export async function describeImageB64(b64Data: string, config?: any): Promise<s
     }
     return null;
   } catch (err: any) {
-    console.error(`[OpenCodex-VisionBridge] OpenCode MiMo vision request failed:`, err.message);
+    console.error(`[codex-gateway-VisionBridge] OpenCode MiMo vision request failed:`, err.message);
     return null;
   }
 }
@@ -1045,7 +1045,7 @@ export async function processVisionBridge(body: any, config?: any): Promise<any>
         } else {
           content[i] = { ...item, file_data: compressed };
         }
-        console.error(`[OpenCodex] Compressed image ${(b64.length / 1024).toFixed(0)}KB → ${(compressed.length / 1024).toFixed(0)}KB`);
+        console.error(`[codex-gateway] Compressed image ${(b64.length / 1024).toFixed(0)}KB → ${(compressed.length / 1024).toFixed(0)}KB`);
       }
 
       images.push({ idx: i, b64: compressed, msgIdx });
@@ -1072,7 +1072,7 @@ export async function processVisionBridge(body: any, config?: any): Promise<any>
       }
     }
     if (described > 0) {
-      console.error(`[OpenCodex-VisionBridge] Replaced ${described} screenshot(s) with descriptions.`);
+      console.error(`[codex-gateway-VisionBridge] Replaced ${described} screenshot(s) with descriptions.`);
     }
   }
 

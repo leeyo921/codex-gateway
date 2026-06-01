@@ -1,5 +1,5 @@
 /**
- * OpenCodex Operating System Action Performer
+ * codex-gateway Operating System Action Performer
  * Performs mouse clicks, smooth drags, scroll events, keyboard typing, key presses,
  * and window management (list and focus) using macOS-native Swift CGEvent APIs.
  */

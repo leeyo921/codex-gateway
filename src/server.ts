@@ -1,5 +1,5 @@
 /**
- * OpenCodex — Main Entrypoint
+ * codex-gateway — Main Entrypoint
  * Unifies the Model Context Protocol (MCP) Computer Use Tools
  * and the Responses HTTP Proxy Gateway.
  */
@@ -106,14 +106,14 @@ const TOOLS: Tool[] = [
   }
 ];
 
-class OpenCodex {
+class CodexGateway {
   private mcp: Server;
   private proxy: ProxyServer;
   private screenshotTaker: ScreenshotTaker;
   private actionPerformer: ActionPerformer;
 
   constructor() {
-    this.mcp = new Server({ name: "opencodex", version: "1.0.0" }, { capabilities: { tools: {} } });
+    this.mcp = new Server({ name: "codex-gateway", version: "1.0.0" }, { capabilities: { tools: {} } });
     this.screenshotTaker = new ScreenshotTaker();
     this.actionPerformer = new ActionPerformer();
     this.proxy = new ProxyServer();
@@ -187,7 +187,7 @@ class OpenCodex {
   async start() {
     this.proxy.start(8765);
     const url = "http://localhost:8765/dashboard";
-    console.log(`[OpenCodex] Dashboard → ${url}`);
+    console.log(`[codex-gateway] Dashboard → ${url}`);
     try {
       const opener =
         process.platform === "win32" ? `start "" "${url}"` :
@@ -197,11 +197,11 @@ class OpenCodex {
     } catch {}
     const transport = new StdioServerTransport();
     await this.mcp.connect(transport);
-    console.log("[OpenCodex] MCP Server connected and ready.");
+    console.log("[codex-gateway] MCP Server connected and ready.");
   }
 }
 
-new OpenCodex().start().catch((err) => {
-  console.error("[OpenCodex] Failed to start:", err);
+new CodexGateway().start().catch((err) => {
+  console.error("[codex-gateway] Failed to start:", err);
   process.exit(1);
 });

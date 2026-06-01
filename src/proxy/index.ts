@@ -1,5 +1,5 @@
 /**
- * OpenCodex Proxy Server
+ * codex-gateway Proxy Server
  * Connects standard Codex requests to selected API providers (DeepSeek, SiliconFlow, OpenAI, Custom).
  * Hosts the local glassmorphic dashboard at http://localhost:8765/dashboard.
  * Broadcasts real-time terminal logs to dashboard sessions using SSE.
@@ -72,7 +72,7 @@ console.error = (...args: any[]) => {
 export class ProxyServer {
   private server: http.Server | null = null;
   private config!: ProxyConfig;
-  private configDir = join(homedir(), ".opencodex");
+  private configDir = join(homedir(), ".codex-gateway");
 
   constructor() {
     this.ensureConfigDir();
@@ -91,10 +91,10 @@ export class ProxyServer {
     if (existsSync(p)) {
       try {
         this.config = JSON.parse(readFileSync(p, "utf-8"));
-        console.error(`[OpenCodex] Loaded providers configuration: ${p}`);
+        console.error(`[codex-gateway] Loaded providers configuration: ${p}`);
         return;
       } catch (err: any) {
-        console.error(`[OpenCodex] Error reading providers.json: ${err.message}`);
+        console.error(`[codex-gateway] Error reading providers.json: ${err.message}`);
       }
     }
 
@@ -104,7 +104,7 @@ export class ProxyServer {
         { name: "opencode", base_url: "https://opencode.ai/zen/go/v1", api_key: "" }
       ]
     };
-    console.error(`[OpenCodex] Config file not found. Created default config.`);
+    console.error(`[codex-gateway] Config file not found. Created default config.`);
     this.saveConfig();
   }
 
@@ -113,7 +113,7 @@ export class ProxyServer {
     try {
       writeFileSync(p, JSON.stringify(this.config, null, 2), "utf-8");
     } catch (err: any) {
-      console.error(`[OpenCodex] Failed to save config: ${err.message}`);
+      console.error(`[codex-gateway] Failed to save config: ${err.message}`);
     }
   }
 
@@ -123,7 +123,7 @@ export class ProxyServer {
       try {
         return JSON.parse(readFileSync(p, "utf-8"));
       } catch (err: any) {
-        console.error(`[OpenCodex] Failed to read model catalog: ${err.message}`);
+        console.error(`[codex-gateway] Failed to read model catalog: ${err.message}`);
       }
     }
     return { models: [] };
@@ -134,9 +134,9 @@ export class ProxyServer {
     try {
       const jsonStr = JSON.stringify(catalog, null, 2);
       writeFileSync(p, jsonStr, "utf-8");
-      console.error(`[OpenCodex] Saved custom model catalog to ${p}`);
+      console.error(`[codex-gateway] Saved custom model catalog to ${p}`);
     } catch (err: any) {
-      console.error(`[OpenCodex] Failed to save custom model catalog: ${err.message}`);
+      console.error(`[codex-gateway] Failed to save custom model catalog: ${err.message}`);
     }
   }
 
@@ -274,39 +274,39 @@ export class ProxyServer {
     if (!existsSync(catalogPath)) {
       const emptyCatalog = { models: [] };
       writeFileSync(catalogPath, JSON.stringify(emptyCatalog, null, 2), "utf-8");
-      console.log(`[OpenCodex] Created empty model catalog at ${catalogPath}`);
+      console.log(`[codex-gateway] Created empty model catalog at ${catalogPath}`);
     }
 
     if (!existsSync(tomlPath)) {
-      console.error(`[OpenCodex] Codex config.toml not found at ${tomlPath}. Skipped auto-patching.`);
+      console.error(`[codex-gateway] Codex config.toml not found at ${tomlPath}. Skipped auto-patching.`);
       return;
     }
 
     try {
       const tomlContent = readFileSync(tomlPath, "utf-8");
-      const alreadyPatched = tomlContent.includes("# >>> opencodex managed >>>");
+      const alreadyPatched = tomlContent.includes("# >>> codex-gateway managed >>>");
 
       // Only back up the very first time we touch a user's native config.
       if (!alreadyPatched) {
         const tomlBackupPath = tomlPath + ".bak_" + Date.now();
         writeFileSync(tomlBackupPath, tomlContent, "utf-8");
-        console.log(`[OpenCodex] Created backup of config.toml at ${tomlBackupPath}`);
-        console.log(`[OpenCodex] Detecting unpatched config.toml. Performing surgical auto-patch...`);
+        console.log(`[codex-gateway] Created backup of config.toml at ${tomlBackupPath}`);
+        console.log(`[codex-gateway] Detecting unpatched config.toml. Performing surgical auto-patch...`);
       } else {
-        console.log(`[OpenCodex] Refreshing managed config.toml blocks (catalog path / default model)...`);
+        console.log(`[codex-gateway] Refreshing managed config.toml blocks (catalog path / default model)...`);
       }
 
       let patchedToml = stripManagedBlocks(tomlContent);
       patchedToml = this.buildManagedTop(catalogPath) + "\n" + patchedToml + "\n\n" + this.buildManagedProvider();
       writeFileSync(tomlPath, patchedToml, "utf-8");
-      console.log(`[OpenCodex] Successfully patched config.toml to route via OpenCodex!`);
+      console.log(`[codex-gateway] Successfully patched config.toml to route via codex-gateway!`);
 
       // Only auto-restart on the first patch so startup isn't disruptive on every launch.
       if (!alreadyPatched) {
         this.restartCodexDesktop();
       }
     } catch (err: any) {
-      console.error(`[OpenCodex] Failed to auto-patch config.toml: ${err.message}`);
+      console.error(`[codex-gateway] Failed to auto-patch config.toml: ${err.message}`);
     }
   }
 
@@ -316,18 +316,18 @@ export class ProxyServer {
   }
 
   private buildManagedTop(catalogPath: string): string {
-    return `# >>> opencodex managed >>>
+    return `# >>> codex-gateway managed >>>
 model = "${this.tomlEscape(this.getDefaultModelSlug())}"
-model_provider = "opencodex"
+model_provider = "codex-gateway"
 model_catalog_json = "${this.tomlEscape(catalogPath)}"
-# <<< opencodex managed <<<
+# <<< codex-gateway managed <<<
 `;
   }
 
   private buildManagedProvider(): string {
-    return `# >>> opencodex managed >>>
-[model_providers.opencodex]
-name = "OpenCodex"
+    return `# >>> codex-gateway managed >>>
+[model_providers.codex-gateway]
+name = "codex-gateway"
 base_url = "http://localhost:8765/v1"
 wire_api = "responses"
 requires_openai_auth = true
@@ -335,7 +335,7 @@ experimental_bearer_token = "dummy"
 request_max_retries = 3
 stream_max_retries = 3
 stream_idle_timeout_ms = 600000
-# <<< opencodex managed <<<
+# <<< codex-gateway managed <<<
 `;
   }
 
@@ -348,14 +348,14 @@ stream_idle_timeout_ms = 600000
       let patched = stripManagedBlocks(content);
       patched = this.buildManagedTop(catalogPath) + "\n" + patched + "\n\n" + this.buildManagedProvider();
       writeFileSync(tomlPath, patched, "utf-8");
-      console.log(`[OpenCodex] Patched config.toml with opencodex provider (default model: ${this.getDefaultModelSlug()}).`);
+      console.log(`[codex-gateway] Patched config.toml with codex-gateway provider (default model: ${this.getDefaultModelSlug()}).`);
     } catch (err: any) {
-      console.error(`[OpenCodex] Failed to patch config.toml: ${err.message}`);
+      console.error(`[codex-gateway] Failed to patch config.toml: ${err.message}`);
     }
   }
 
   public restartCodexDesktop() {
-    console.log("[OpenCodex] Executing background cold-restart of Codex Desktop...");
+    console.log("[codex-gateway] Executing background cold-restart of Codex Desktop...");
     if (process.platform === "win32") {
       // Best-effort on Windows: kill any Codex* processes and relaunch via shell.
       const psCmd = [
@@ -365,9 +365,9 @@ stream_idle_timeout_ms = 600000
       ].join(" ");
       exec(`powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "${psCmd}"`, (err) => {
         if (err) {
-          console.error(`[OpenCodex] Codex restart on Windows completed with status: ${err.message}`);
+          console.error(`[codex-gateway] Codex restart on Windows completed with status: ${err.message}`);
         } else {
-          console.log("[OpenCodex] Codex Desktop restart attempted on Windows.");
+          console.log("[codex-gateway] Codex Desktop restart attempted on Windows.");
         }
       });
       return;
@@ -375,9 +375,9 @@ stream_idle_timeout_ms = 600000
     const cmd = 'killall Codex "Codex Helper" "Codex Helper (Renderer)" "Codex Helper (GPU)" SkyComputerUseClient SkyComputerUseService bare-modifier-monitor 2>/dev/null; kill -9 $(ps aux | grep -i "codex app-server" | grep -v "grep" | awk \'{print $2}\') 2>/dev/null; sleep 1.5; open -a Codex';
     exec(cmd, (err, stdout, stderr) => {
       if (err) {
-        console.error(`[OpenCodex] Codex restart completed with errors or status: ${err.message}`);
+        console.error(`[codex-gateway] Codex restart completed with errors or status: ${err.message}`);
       } else {
-        console.log("[OpenCodex] Codex Desktop successfully restarted in the background.");
+        console.log("[codex-gateway] Codex Desktop successfully restarted in the background.");
       }
     });
   }
@@ -389,8 +389,8 @@ stream_idle_timeout_ms = 600000
       req.on("end", () => this.handle(req, res, body));
     });
     this.server.listen(port, "0.0.0.0");
-    console.error(`[OpenCodex] Unified HTTP server listening on port ${port}`);
-    console.error(`[OpenCodex] Web Dashboard UI → http://localhost:${port}/dashboard`);
+    console.error(`[codex-gateway] Unified HTTP server listening on port ${port}`);
+    console.error(`[codex-gateway] Web Dashboard UI → http://localhost:${port}/dashboard`);
   }
 
   stop() {
@@ -470,7 +470,7 @@ stream_idle_timeout_ms = 600000
           const merged = [...new Set([...data.models, ...existingNames])];
           const catalog = this.buildCatalogFromModelNames(merged);
           this.saveModelCatalog(catalog);
-          console.log(`[OpenCodex] Merged models: ${merged.length} total (${existingNames.size} kept, ${data.models.length} from input).`);
+          console.log(`[codex-gateway] Merged models: ${merged.length} total (${existingNames.size} kept, ${data.models.length} from input).`);
         }
 
         this.patchCodexConfig();
@@ -575,7 +575,7 @@ stream_idle_timeout_ms = 600000
         if (catalog.models) {
           catalog.models = catalog.models.filter((m: any) => m.slug !== slug && m.model !== slug);
           this.saveModelCatalog(catalog);
-          console.log(`[OpenCodex] Deleted model: ${slug}`);
+          console.log(`[codex-gateway] Deleted model: ${slug}`);
         }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "success" }));
@@ -595,7 +595,7 @@ stream_idle_timeout_ms = 600000
     }
 
     if (path === "/api/test-log" && req.method === "POST") {
-      console.log("[OpenCodex] Test log from dashboard at " + new Date().toLocaleTimeString());
+      console.log("[codex-gateway] Test log from dashboard at " + new Date().toLocaleTimeString());
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ status: "ok" }));
       return;
@@ -618,14 +618,14 @@ stream_idle_timeout_ms = 600000
         const tomlPath = join(homedir(), ".codex", "config.toml");
         if (existsSync(tomlPath)) {
           let content = readFileSync(tomlPath, "utf-8");
-          content = content.replace(/# >>> opencodex managed >>>[\s\S]*?# <<< opencodex managed <<<\n?/gi, "").trim();
+          content = content.replace(/# >>> codex-gateway managed >>>[\s\S]*?# <<< codex-gateway managed <<<\n?/gi, "").trim();
           writeFileSync(tomlPath, content + "\n", "utf-8");
         }
         const catalogPath = join(this.configDir, "custom_model_catalog.json");
         if (existsSync(catalogPath)) {
           writeFileSync(catalogPath, JSON.stringify({ models: [] }), "utf-8");
         }
-        console.log("[OpenCodex] Reset to native state. Restarting Codex...");
+        console.log("[codex-gateway] Reset to native state. Restarting Codex...");
         this.restartCodexDesktop();
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "success" }));
@@ -640,7 +640,7 @@ stream_idle_timeout_ms = 600000
 
     if (path === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ status: "ok", version: "1.0.0", opencodex: true }));
+      res.end(JSON.stringify({ status: "ok", version: "1.0.0", "codex-gateway": true }));
       return;
     }
 
@@ -667,11 +667,11 @@ stream_idle_timeout_ms = 600000
           id: m.slug,
           object: "model",
           created: Math.floor(Date.now() / 1000),
-          owned_by: "opencodex"
+          owned_by: "codex-gateway"
         }));
 
       // Always inject native Computer Use pass-through model id
-      data.push({ id: "opencodex/cu", object: "model", owned_by: "local" });
+      data.push({ id: "codex-gateway/cu", object: "model", owned_by: "local" });
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ object: "list", data }));
@@ -953,7 +953,7 @@ stream_idle_timeout_ms = 600000
             if (hasNativeVision) {
               return { type: "image_url", image_url: { url: part.image_url?.url || part.source?.url || "" } };
             }
-            return { type: "text", text: "[Visual Screenshot description omitted by OpenCodex]" };
+            return { type: "text", text: "[Visual Screenshot description omitted by codex-gateway]" };
           }
           return part;
         })
@@ -1033,7 +1033,7 @@ stream_idle_timeout_ms = 600000
 }
 
 function stripManagedBlocks(content: string): string {
-  return content.replace(/# >>> opencodex managed >>>[\s\S]*?# <<< opencodex managed <<<\n?/gi, "").trim();
+  return content.replace(/# >>> codex-gateway managed >>>[\s\S]*?# <<< codex-gateway managed <<<\n?/gi, "").trim();
 }
 
 function getDefaultCatalog() {
