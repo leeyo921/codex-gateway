@@ -1,0 +1,79 @@
+name: Build executables
+
+# Build standalone single-file executables for Windows + macOS and attach
+# them to a GitHub Release. No Node.js install required by end users.
+#
+# Trigger:
+#   - push a tag like `v0.1.0`  -> builds + publishes a Release
+#   - manual "Run workflow"     -> builds artifacts only (no Release)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.asset }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: codex-gateway.exe
+            asset: codex-gateway-windows-x64.exe
+          - os: macos-13 # Intel
+            artifact: codex-gateway
+            asset: codex-gateway-macos-x64
+          - os: macos-14 # Apple Silicon
+            artifact: codex-gateway
+            asset: codex-gateway-macos-arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build single-file executable
+        run: npm run build:exe
+
+      - name: Rename for release
+        shell: bash
+        run: mv "build/${{ matrix.artifact }}" "${{ matrix.asset }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-artifacts/**/*
+          generate_release_notes: true
