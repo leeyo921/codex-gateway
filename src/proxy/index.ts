@@ -454,7 +454,17 @@ stream_idle_timeout_ms = 600000
         const data = JSON.parse(body);
 
         if (data.providers && Array.isArray(data.providers)) {
-          this.config.providers = data.providers;
+          // Accept providers array directly (new UI format).
+          // Each entry may include an optional vision_model field.
+          this.config.providers = data.providers.map((p: any) => {
+            const entry: ProviderConfig = {
+              name: p.name || "",
+              base_url: p.base_url || "",
+              api_key: p.api_key || ""
+            };
+            if (p.vision_model) entry.vision_model = p.vision_model;
+            return entry;
+          });
         } else {
           this.config.providers = [
             { name: data.primary.name, base_url: data.primary.base_url, api_key: data.primary.api_key },
@@ -546,15 +556,21 @@ stream_idle_timeout_ms = 600000
       try {
         const data = JSON.parse(body);
         const activeIds = data.active || [];
+        // vision_bridge: { [slug]: boolean } — optional per-model toggle
+        const visionBridgeMap: Record<string, boolean> = data.vision_bridge || {};
         const catalog = this.getModelCatalog();
-        
+
         if (catalog.models) {
           catalog.models.forEach((m: any) => {
             m.visibility = activeIds.includes(m.slug) ? "list" : "hide";
+            // Only update vision_bridge_enabled when the key is explicitly provided
+            if (m.slug in visionBridgeMap) {
+              m.vision_bridge_enabled = !!visionBridgeMap[m.slug];
+            }
           });
           this.saveModelCatalog(catalog);
         }
-        
+
         if (data.restart) {
           this.restartCodexDesktop();
         }
