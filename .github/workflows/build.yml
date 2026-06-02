@@ -27,10 +27,7 @@ jobs:
           - os: windows-latest
             artifact: codex-gateway.exe
             asset: codex-gateway-windows-x64.exe
-          - os: macos-13 # Intel
-            artifact: codex-gateway
-            asset: codex-gateway-macos-x64
-          - os: macos-14 # Apple Silicon
+          - os: macos-14 # Apple Silicon (arm64)
             artifact: codex-gateway
             asset: codex-gateway-macos-arm64
     steps:
