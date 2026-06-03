@@ -980,7 +980,7 @@ export function getDashboardHtml(): string {
     }
 
     // Build a provider row with Test-connection + Fetch-models controls
-    function addProviderRow(name, url, key) {
+    function addProviderRow(name, url, key, visionModel) {
       const container = document.getElementById('providers-container');
       const div = document.createElement('div');
       div.className = 'provider-row';
@@ -990,6 +990,7 @@ export function getDashboardHtml(): string {
         <input class="prov-name" placeholder="名称/name" value="\${name || ''}" style="width:90px;\${inputStyle}">
         <input class="prov-url" placeholder="https://api.example.com/v1" value="\${url || ''}" style="flex:1;min-width:160px;\${inputStyle}">
         <input class="prov-key" type="password" placeholder="sk-..." value="\${key || ''}" style="flex:1;min-width:110px;\${inputStyle}">
+        <input class="prov-vision-model" placeholder="视觉模型(可选)" value="\${visionModel || ''}" title="Vision Bridge 降级模型（留空则使用 mimo-v2.5）" style="width:130px;\${inputStyle}">
         <button type="button" class="prov-test-btn" onclick="testProvider(this)" title="验证地址和 Token" style="background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.3);color:var(--color-secondary);padding:0.45rem 0.7rem;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;white-space:nowrap;">⚡ 测试</button>
         <button type="button" class="prov-fetch-btn" onclick="fetchProviderModels(this)" title="从该供应商拉取模型列表" style="background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);color:var(--color-primary);padding:0.45rem 0.7rem;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;white-space:nowrap;">⬇ 拉取模型</button>
         <button type="button" onclick="this.parentElement.remove()" title="删除" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:0.8rem;">✕</button>
@@ -1003,7 +1004,7 @@ export function getDashboardHtml(): string {
       container.appendChild(div);
     }
 
-    // Read a provider row's current name/url/key
+    // Read a provider row's current name/url/key/vision_model
     function readProviderRow(btn) {
       const row = btn.closest('.provider-row');
       return {
@@ -1011,6 +1012,7 @@ export function getDashboardHtml(): string {
         name: row.querySelector('.prov-name').value.trim(),
         base_url: row.querySelector('.prov-url').value.trim(),
         api_key: row.querySelector('.prov-key').value.trim(),
+        vision_model: (row.querySelector('.prov-vision-model')?.value || '').trim() || undefined,
         statusEl: row.querySelector('.prov-status')
       };
     }
@@ -1243,7 +1245,7 @@ export function getDashboardHtml(): string {
         // Populate provider rows
         const container = document.getElementById('providers-container');
         container.innerHTML = '';
-        (data.providers || []).forEach(p => addProviderRow(p.name, p.base_url, p.api_key));
+        (data.providers || []).forEach(p => addProviderRow(p.name, p.base_url, p.api_key, p.vision_model));
 
         // Distribute models to their provider rows as chips
         const catalog = modelsData.catalog || [];
@@ -1294,21 +1296,22 @@ export function getDashboardHtml(): string {
           const isActive = activeIds.has(m.id);
           const hasVision = !m.no_image_support;
           const hasBridge = !!m.vision_bridge_enabled;
-          
-          const badgeHtml = hasBridge 
-            ? '<span class="badge badge-fallback">Vision Bridge</span>' 
-            : (hasVision ? '<span class="badge badge-vision">Native Vision</span>' : '');
+
+          // Vision badge (static display of native vision capability)
+          const nativeBadgeHtml = (!hasBridge && hasVision)
+            ? '<span class="badge badge-vision">Native Vision</span>'
+            : '';
 
           const item = document.createElement('div');
           item.className = 'model-item';
           item.onclick = (e) => {
-            if (e.target.type !== 'checkbox') {
+            if (e.target.type !== 'checkbox' && !e.target.closest('.vision-bridge-toggle')) {
               const cb = item.querySelector('.model-checkbox');
               cb.checked = !cb.checked;
             }
           };
-          
-            item.innerHTML = \`
+
+          item.innerHTML = \`
             <div class="model-checkbox-container">
               <input type="checkbox" class="model-checkbox" data-id="\${m.id}" \${isActive ? 'checked' : ''}>
               <div class="model-info">
@@ -1316,12 +1319,13 @@ export function getDashboardHtml(): string {
                 <div class="model-slug">\${m.provider ? m.provider + ' / ' : ''}\${m.model}</div>
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:0.5rem;">
-              <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;" onclick="event.stopPropagation();">
-                <input type="checkbox" class="vision-bridge-checkbox" data-id="\${m.id}" \${m.vision_bridge_enabled ? 'checked' : ''} style="width:14px;height:14px;accent-color:var(--color-primary);">
-                <span style="font-size:0.72rem;color:var(--color-text-muted);">Vision Bridge</span>
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;justify-content:flex-end;">
+              \${nativeBadgeHtml}
+              <label class="vision-bridge-toggle" title="启用 Vision Bridge：截图将由视觉模型描述后传给文本模型" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;font-size:0.72rem;font-weight:600;color:\${hasBridge ? 'var(--color-primary)' : 'var(--color-text-muted)'};border:1px solid \${hasBridge ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.08)'};border-radius:99px;padding:0.2rem 0.55rem;background:\${hasBridge ? 'rgba(168,85,247,0.12)' : 'transparent'};transition:all 0.2s;white-space:nowrap;" onclick="event.stopPropagation()">
+                <input type="checkbox" class="vision-bridge-cb" data-id="\${m.id}" \${hasBridge ? 'checked' : ''} style="display:none;" onchange="updateVisionBridgeStyle(this)">
+                <span style="font-size:0.8rem;">\${hasBridge ? '👁' : '○'}</span> Vision Bridge
               </label>
-              <button class="model-delete-btn" data-slug="\${m.id}" onclick="event.stopPropagation(); deleteModel(this.dataset.slug)" title="删除">✕</button>
+              <button class="model-delete-btn" data-id="\${m.id}" onclick="event.stopPropagation(); deleteModel('\${m.id}')" title="删除">✕</button>
             </div>
           \`;
           container.appendChild(item);
@@ -1339,11 +1343,17 @@ export function getDashboardHtml(): string {
       
       // Build providers array from UI
       const providerRows = document.querySelectorAll('#providers-container .provider-row');
-      const providers = Array.from(providerRows).map(row => ({
-        name: row.querySelector('.prov-name').value.trim(),
-        base_url: row.querySelector('.prov-url').value.trim(),
-        api_key: row.querySelector('.prov-key').value.trim()
-      })).filter(p => p.name && p.base_url);
+      const providers = Array.from(providerRows).map(row => {
+        const entry = {
+          name: row.querySelector('.prov-name').value.trim(),
+          base_url: row.querySelector('.prov-url').value.trim(),
+          api_key: row.querySelector('.prov-key').value.trim(),
+          vision_model: (row.querySelector('.prov-vision-model').value || '').trim() || undefined
+        };
+        // Remove undefined keys to keep JSON clean
+        if (!entry.vision_model) delete entry.vision_model;
+        return entry;
+      }).filter(p => p.name && p.base_url);
 
       // Inject vision_model into the selected provider
       const visionProvName = document.getElementById('vision-provider-select').value;
@@ -1389,11 +1399,28 @@ export function getDashboardHtml(): string {
       }
     };
 
+    // Update Vision Bridge toggle label style when checkbox changes
+    function updateVisionBridgeStyle(checkbox) {
+      const label = checkbox.closest('.vision-bridge-toggle');
+      if (!label) return;
+      const enabled = checkbox.checked;
+      label.style.color = enabled ? 'var(--color-primary)' : 'var(--color-text-muted)';
+      label.style.borderColor = enabled ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.08)';
+      label.style.background = enabled ? 'rgba(168,85,247,0.12)' : 'transparent';
+      label.querySelector('span').textContent = enabled ? '👁' : '○';
+    }
+
     // Save active models
     async function saveActiveModels() {
       const checkedBoxes = document.querySelectorAll('.model-checkbox:checked');
       const activeIds = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-id'));
-      const visionBridgeIds = Array.from(document.querySelectorAll('.vision-bridge-checkbox:checked')).map(cb => cb.getAttribute('data-id'));
+
+      // Collect vision_bridge_enabled state for every model
+      const visionBridge = {};
+      document.querySelectorAll('.vision-bridge-cb').forEach(cb => {
+        visionBridge[cb.getAttribute('data-id')] = cb.checked;
+      });
+
       const restartChecked = document.getElementById('models-restart-checkbox').checked;
 
       try {
@@ -1404,7 +1431,7 @@ export function getDashboardHtml(): string {
         const response = await fetch('/api/models', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ active: activeIds, vision_bridge: visionBridgeIds, restart: restartChecked })
+          body: JSON.stringify({ active: activeIds, vision_bridge: visionBridge, restart: restartChecked })
         });
         
         if (response.ok) {
