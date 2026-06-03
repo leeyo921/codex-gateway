@@ -9,6 +9,7 @@
 ---
 
 # English
+This project is forked from OpenCodex, with additional improvements for usability, Windows support, provider management, and Vision Bridge configuration.
 
 **codex-gateway** is a plug-and-play local gateway that unlocks Codex Desktop for third-party APIs, featuring a premium web dashboard, custom Computer Use engine, and Vision Bridge for text-only models.
 
@@ -72,6 +73,7 @@ After starting, open [http://localhost:8765/dashboard](http://localhost:8765/das
 ---
 
 # 简体中文
+本项目 fork 自 OpenCodex，并在此基础上针对易用性、Windows 支持、Provider 管理和 Vision Bridge 配置做了改造。
 
 **codex-gateway** 是一款即插即用的本地网关，为 Codex Desktop 解锁第三方 API。配备高颜值 Web 控制台、自研 Computer Use 引擎，以及让纯文本模型也能看图操作的 Vision Bridge。
 

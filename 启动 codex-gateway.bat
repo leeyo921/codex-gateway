@@ -10,6 +10,14 @@ echo    codex-gateway 启动器 / Launcher (Windows)
 echo ============================================
 echo.
 
+REM 1) 优先使用项目目录旁的本地 Node.js / Prefer local Node.js next to project
+for /d %%d in ("%~dp0..\nodejs\node-v*-win-x64") do (
+  if exist "%%d\node.exe" (
+    set "PATH=%%d;%PATH%"
+    echo [OK] 使用本地 Node.js: %%d
+  )
+)
+
 REM 1) 检查 Node.js / Check Node.js
 where node >nul 2>nul
 if errorlevel 1 (
