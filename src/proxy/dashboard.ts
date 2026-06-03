@@ -397,6 +397,86 @@ export function getDashboardHtml(): string {
       background: rgba(239, 68, 68, 0.3);
     }
 
+    /* Model chips in provider rows */
+    .prov-models-area {
+      flex-basis: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      padding-top: 0.35rem;
+      min-height: 0;
+    }
+    .model-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      color: var(--color-secondary);
+      padding: 0.25rem 0.55rem;
+      border-radius: 99px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 500;
+      transition: var(--transition-standard);
+    }
+    .model-chip:hover {
+      background: rgba(6, 182, 212, 0.18);
+    }
+    .model-chip .chip-del {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.35);
+      cursor: pointer;
+      font-size: 0.7rem;
+      padding: 0 0 0 0.1rem;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+    .model-chip .chip-del:hover {
+      color: var(--color-danger);
+    }
+    .prov-model-add-area {
+      flex-basis: 100%;
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+      margin-top: 0.2rem;
+    }
+    .prov-model-add-area input {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      flex: 1;
+      outline: none;
+      transition: var(--transition-standard);
+    }
+    .prov-model-add-area input:focus {
+      border-color: var(--color-secondary);
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.15);
+    }
+    .prov-model-add-area button {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      color: var(--color-secondary);
+      padding: 0.3rem 0.55rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      transition: var(--transition-standard);
+      white-space: nowrap;
+    }
+    .prov-model-add-area button:hover {
+      background: rgba(6, 182, 212, 0.25);
+    }
+
     /* Actions Button */
     .action-btn {
       background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
@@ -601,7 +681,7 @@ export function getDashboardHtml(): string {
       <div class="brand-section">
         <div class="logo-container">O</div>
         <div>
-          <h1 id="i18n-title">codex-gateway Gateway</h1>
+          <h1 id="i18n-title">codex-gateway</h1>
           <p id="i18n-subtitle" style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 500;">Beginner-Friendly Custom Model Control Panel</p>
         </div>
       </div>
@@ -638,17 +718,6 @@ export function getDashboardHtml(): string {
             <button type="button" class="console-btn" onclick="addProviderRow()" style="margin-top:0.5rem;width:100%;padding:0.6rem;">+ Add Provider</button>
           </div>
 
-          <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 0.5rem 0;">
-
-          <!-- Model Names -->
-          <div class="form-group">
-            <label for="model-names" id="i18n-label-models">Models（每行一个，格式: 供应商名:模型名）</label>
-            <textarea id="model-names" rows="5" placeholder="opencode:deepseek-v4-flash
-jdcloud:GLM-5
-iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);padding:0.85rem 1rem;border-radius:10px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:0.85rem;resize:vertical;transition:var(--transition-standard);outline:none;"></textarea>
-            <p style="font-size:0.75rem;color:var(--color-text-muted);margin-top:0.3rem;" id="i18n-model-hint">Format: <b>provider:model</b> — one per line. Providers are auto-created, fill in their credentials above.</p>
-          </div>
-
           <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem;">
             <input type="checkbox" id="config-restart-checkbox" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-secondary);">
             <label for="config-restart-checkbox" id="i18n-label-config-restart" style="cursor: pointer; user-select: none; font-size: 0.85rem; color: var(--color-text-muted);">保存后自动重启 Codex Desktop</label>
@@ -659,6 +728,41 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
       </div>
 
       <!-- Model Catalog Customized -->
+      <div class="panel-card">
+        <div class="panel-title" id="i18n-panel-vision-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          </svg>
+          Vision Bridge
+        </div>
+
+        <p id="i18n-vision-desc" style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+          当主模型不支持多模态（如 DeepSeek），Vision Bridge 会用一个多模态模型描述截图内容，将文字注入回 Prompt，让纯文本模型也能跑 Computer Use。
+        </p>
+
+        <div style="display:flex;flex-direction:column;gap:0.75rem;">
+          <div class="form-group">
+            <label id="i18n-label-vision-provider">Vision Provider</label>
+            <select id="vision-provider-select" style="width:100%;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);padding:0.7rem 1rem;border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.9rem;">
+              <option value="">-- 选择一个已配置的 Provider --</option>
+            </select>
+            <p style="font-size:0.72rem;color:var(--color-text-muted);margin-top:0.2rem;" id="i18n-vision-provider-hint">选择哪个 Provider 的 API 来调用视觉模型（使用该 Provider 的地址和密钥）</p>
+          </div>
+          <div class="form-group">
+            <label id="i18n-label-vision-model">Vision Model Name</label>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <input type="text" id="vision-model-input" placeholder="mimo-v2.5" style="flex:1;">
+              <button type="button" id="vision-fetch-btn" onclick="fetchVisionModels()" style="background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);color:var(--color-primary);padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600;white-space:nowrap;font-family:'Outfit',sans-serif;">⬇ 拉取模型</button>
+            </div>
+            <select id="vision-model-select" onchange="if(this.value){document.getElementById('vision-model-input').value=this.value;}" style="display:none;width:100%;margin-top:0.4rem;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);padding:0.6rem 1rem;border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+            </select>
+            <p style="font-size:0.72rem;color:var(--color-text-muted);margin-top:0.2rem;" id="i18n-vision-model-hint">多模态模型名称，默认 mimo-v2.5。可手输或从 Provider 拉取选择</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model Dropdown Customizer -->
       <div class="panel-card">
         <div class="panel-title" id="i18n-panel-models-title">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -743,7 +847,7 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
     // i18n Dictionary
     const i18nDict = {
       en: {
-        title: "codex-gateway Gateway",
+        title: "codex-gateway",
         subtitle: "Beginner-Friendly Custom Model Control Panel",
         status: "Active & Intercepting",
         panelApiTitle: "API Settings & Keys",
@@ -781,7 +885,7 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
         toastResetDone: "Reset complete. Codex restarting."
       },
       zh: {
-        title: "codex-gateway 统一网关",
+        title: "codex-gateway",
         subtitle: "面向新手的自定义模型控制面板",
         status: "运行中 & 实时拦截",
         panelApiTitle: "API 密钥与接口设置",
@@ -890,6 +994,11 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
         <button type="button" class="prov-fetch-btn" onclick="fetchProviderModels(this)" title="从该供应商拉取模型列表" style="background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);color:var(--color-primary);padding:0.45rem 0.7rem;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;white-space:nowrap;">⬇ 拉取模型</button>
         <button type="button" onclick="this.parentElement.remove()" title="删除" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:0.8rem;">✕</button>
         <span class="prov-status" style="flex-basis:100%;font-size:0.75rem;color:var(--color-text-muted);"></span>
+        <div class="prov-models-area"></div>
+        <div class="prov-model-add-area">
+          <input class="prov-model-input" placeholder="手动输入模型名 / type model name" onkeydown="if(event.key==='Enter'){event.preventDefault();addModelManual(this);}">
+          <button type="button" onclick="addModelManual(this.closest('.prov-model-add-area').querySelector('.prov-model-input'))">+ Add</button>
+        </div>
       \`;
       container.appendChild(div);
     }
@@ -904,6 +1013,54 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
         api_key: row.querySelector('.prov-key').value.trim(),
         statusEl: row.querySelector('.prov-status')
       };
+    }
+
+    // Add a model chip to a provider row's models area
+    function addModelChipToArea(area, modelName) {
+      if (!modelName) return;
+      // Check duplicates
+      const existing = area.querySelectorAll('.model-chip');
+      for (const chip of existing) {
+        if (chip.dataset.model === modelName) return;
+      }
+      const chip = document.createElement('span');
+      chip.className = 'model-chip';
+      chip.dataset.model = modelName;
+      chip.innerHTML = modelName + ' <button class="chip-del" onclick="this.parentElement.remove()">✕</button>';
+      area.appendChild(chip);
+    }
+
+    // Manual add model via the small input
+    function addModelManual(inputEl) {
+      const val = inputEl.value.trim();
+      if (!val) return;
+      const row = inputEl.closest('.provider-row');
+      const area = row.querySelector('.prov-models-area');
+      addModelChipToArea(area, val);
+      inputEl.value = '';
+    }
+
+    // Find a provider row by name
+    function findProviderRow(name) {
+      const rows = document.querySelectorAll('#providers-container .provider-row');
+      for (const row of rows) {
+        if (row.querySelector('.prov-name').value.trim() === name) return row;
+      }
+      return null;
+    }
+
+    // Collect all models from all provider rows as ["provider:model", ...]
+    function collectAllModels() {
+      const result = [];
+      const rows = document.querySelectorAll('#providers-container .provider-row');
+      rows.forEach(row => {
+        const name = row.querySelector('.prov-name').value.trim();
+        row.querySelectorAll('.prov-models-area .model-chip').forEach(chip => {
+          const model = chip.dataset.model;
+          if (name && model) result.push(name + ':' + model);
+        });
+      });
+      return result;
     }
 
     function setProvStatus(el, text, color) {
@@ -965,16 +1122,20 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
       }
     }
 
-    // Model picker modal: lets the user select fetched models to append to the textarea
+    // Model picker modal: lets the user select fetched models to append to the provider's chip area
     function openModelPicker(provider, models) {
       const overlay = document.getElementById('model-picker-modal');
       const listEl = document.getElementById('model-picker-list');
       const titleEl = document.getElementById('model-picker-title');
       titleEl.innerText = \`从 "\${provider}" 选择模型（共 \${models.length} 个）\`;
-      const existing = new Set(document.getElementById('model-names').value.split('\\n').map(s => s.trim()));
+      // Check which models already exist in the provider row
+      const provRow = findProviderRow(provider);
+      const existingSet = new Set();
+      if (provRow) {
+        provRow.querySelectorAll('.prov-models-area .model-chip').forEach(chip => existingSet.add(chip.dataset.model));
+      }
       listEl.innerHTML = models.map((m) => {
-        const full = provider + ':' + m;
-        const checked = existing.has(full) ? 'checked' : '';
+        const checked = existingSet.has(m) ? 'checked' : '';
         return \`<label style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.6rem;border-radius:8px;cursor:pointer;background:rgba(255,255,255,0.02);">
           <input type="checkbox" class="mp-cb" value="\${m}" \${checked} style="width:16px;height:16px;accent-color:var(--color-secondary);cursor:pointer;">
           <span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">\${m}</span>
@@ -992,16 +1153,59 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
       const overlay = document.getElementById('model-picker-modal');
       const provider = overlay.dataset.provider;
       const chosen = Array.from(document.querySelectorAll('#model-picker-list .mp-cb:checked')).map(cb => cb.value);
-      const ta = document.getElementById('model-names');
-      const lines = new Set(ta.value.split('\\n').map(s => s.trim()).filter(Boolean));
-      chosen.forEach(m => lines.add(provider + ':' + m));
-      ta.value = Array.from(lines).join('\\n');
+      const provRow = findProviderRow(provider);
+      if (provRow && chosen.length) {
+        const area = provRow.querySelector('.prov-models-area');
+        chosen.forEach(m => addModelChipToArea(area, m));
+      }
       overlay.classList.remove('show');
       showToast(currentLang === 'zh' ? \`已添加 \${chosen.length} 个模型，记得点击"保存"\` : \`Added \${chosen.length} models — remember to Save\`);
     }
 
     function closeModelPicker() {
       document.getElementById('model-picker-modal').classList.remove('show');
+    }
+
+    // Fetch models for Vision Bridge from the selected provider
+    async function fetchVisionModels() {
+      const provName = document.getElementById('vision-provider-select').value;
+      if (!provName) {
+        showToast(currentLang === 'zh' ? '请先选择 Vision Provider' : 'Select a Vision Provider first', true);
+        return;
+      }
+      const btn = document.getElementById('vision-fetch-btn');
+      const original = btn.innerText;
+      btn.disabled = true;
+      btn.innerText = '拉取中...';
+      try {
+        const r = await fetch('/api/provider/fetch-models', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider_name: provName })
+        });
+        const d = await r.json();
+        if (d.ok && Array.isArray(d.models) && d.models.length) {
+          const sel = document.getElementById('vision-model-select');
+          sel.innerHTML = '<option value="">-- 选择模型 / Select --</option>';
+          d.models.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            sel.appendChild(opt);
+          });
+          sel.style.display = 'block';
+          showToast(currentLang === 'zh'
+            ? '拉取到 ' + d.models.length + ' 个模型，请从列表选择'
+            : 'Fetched ' + d.models.length + ' models, pick from list');
+        } else {
+          showToast(d.error || (currentLang === 'zh' ? '未获取到模型' : 'No models found'), true);
+        }
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = original;
+      }
     }
 
     function togglePass(id) {
@@ -1041,9 +1245,35 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
         container.innerHTML = '';
         (data.providers || []).forEach(p => addProviderRow(p.name, p.base_url, p.api_key));
 
-        // Populate model names textarea from catalog
-        const modelNames = (modelsData.catalog || []).map((m) => m.provider ? m.provider + ':' + m.model : m.model).join('\\n');
-        document.getElementById('model-names').value = modelNames;
+        // Distribute models to their provider rows as chips
+        const catalog = modelsData.catalog || [];
+        catalog.forEach(m => {
+          const provName = m.provider || '';
+          const provRow = findProviderRow(provName);
+          if (provRow) {
+            addModelChipToArea(provRow.querySelector('.prov-models-area'), m.model);
+          }
+        });
+
+        // Populate Vision Bridge settings
+        const visionSelect = document.getElementById('vision-provider-select');
+        const visionModelInput = document.getElementById('vision-model-input');
+        visionSelect.innerHTML = '<option value="">-- ' + (currentLang === 'zh' ? '选择 Provider' : 'Select Provider') + ' --</option>';
+        let visionProvName = '';
+        let visionModelVal = '';
+        (data.providers || []).forEach(p => {
+          if (!p.name) return;
+          const opt = document.createElement('option');
+          opt.value = p.name;
+          opt.textContent = p.name;
+          visionSelect.appendChild(opt);
+          if (p.vision_model) {
+            visionProvName = p.name;
+            visionModelVal = p.vision_model;
+          }
+        });
+        if (visionProvName) visionSelect.value = visionProvName;
+        visionModelInput.value = visionModelVal;
       } catch (err) {
         showToast(currentLang === 'zh' ? '加载配置失败' : 'Failed to load configs', true);
       }
@@ -1083,12 +1313,15 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
               <input type="checkbox" class="model-checkbox" data-id="\${m.id}" \${isActive ? 'checked' : ''}>
               <div class="model-info">
                 <div class="model-display-name">\${m.display_name}</div>
-                <div class="model-slug">\${m.model}</div>
+                <div class="model-slug">\${m.provider ? m.provider + ' / ' : ''}\${m.model}</div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:0.5rem;">
-              \${badgeHtml}
-              <button class="model-delete-btn" data-id="\${m.id}" onclick="event.stopPropagation(); deleteModel('\${m.id}')" title="删除">✕</button>
+              <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;" onclick="event.stopPropagation();">
+                <input type="checkbox" class="vision-bridge-checkbox" data-id="\${m.id}" \${m.vision_bridge_enabled ? 'checked' : ''} style="width:14px;height:14px;accent-color:var(--color-primary);">
+                <span style="font-size:0.72rem;color:var(--color-text-muted);">Vision Bridge</span>
+              </label>
+              <button class="model-delete-btn" data-slug="\${m.id}" onclick="event.stopPropagation(); deleteModel(this.dataset.slug)" title="删除">✕</button>
             </div>
           \`;
           container.appendChild(item);
@@ -1112,11 +1345,16 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
         api_key: row.querySelector('.prov-key').value.trim()
       })).filter(p => p.name && p.base_url);
 
-      // Parse model names
-      const modelNames = document.getElementById('model-names').value
-        .split('\\n')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
+      // Inject vision_model into the selected provider
+      const visionProvName = document.getElementById('vision-provider-select').value;
+      const visionModelVal = document.getElementById('vision-model-input').value.trim();
+      if (visionProvName && visionModelVal) {
+        const target = providers.find(p => p.name === visionProvName);
+        if (target) target.vision_model = visionModelVal;
+      }
+
+      // Collect models from all provider rows' chip lists
+      const modelNames = collectAllModels();
 
       try {
         if (restartChecked) {
@@ -1155,17 +1393,18 @@ iflytek:astron-code-latest" style="width:100%;background:rgba(0,0,0,0.25);border
     async function saveActiveModels() {
       const checkedBoxes = document.querySelectorAll('.model-checkbox:checked');
       const activeIds = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-id'));
+      const visionBridgeIds = Array.from(document.querySelectorAll('.vision-bridge-checkbox:checked')).map(cb => cb.getAttribute('data-id'));
       const restartChecked = document.getElementById('models-restart-checkbox').checked;
-      
+
       try {
         if (restartChecked) {
           showToast(i18nDict[currentLang].toastRestarting);
         }
-        
+
         const response = await fetch('/api/models', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ active: activeIds, restart: restartChecked })
+          body: JSON.stringify({ active: activeIds, vision_bridge: visionBridgeIds, restart: restartChecked })
         });
         
         if (response.ok) {

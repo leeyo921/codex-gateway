@@ -159,7 +159,7 @@ export class ProxyServer {
         this.saveConfig();
       }
       models.push({
-        slug: modelName,
+        slug: provider ? `${provider}/${modelName}` : modelName,
         model: modelName,
         display_name: modelName,
         provider,
@@ -466,11 +466,23 @@ stream_idle_timeout_ms = 600000
 
         if (data.models && Array.isArray(data.models)) {
           const existing = this.getModelCatalog();
-          const existingNames = new Set((existing.models || []).map((m: any) => m.model));
-          const merged = [...new Set([...data.models, ...existingNames])];
-          const catalog = this.buildCatalogFromModelNames(merged);
+          const existingMap = new Map<string, any>();
+          (existing.models || []).forEach((m: any) => {
+            const key = m.provider ? m.provider + '/' + m.model : m.model;
+            existingMap.set(key, m);
+          });
+          const catalog = this.buildCatalogFromModelNames(data.models);
+          // Preserve visibility and vision_bridge_enabled from previous catalog
+          (catalog.models || []).forEach((m: any) => {
+            const key = m.provider ? m.provider + '/' + m.model : m.model;
+            const prev = existingMap.get(key);
+            if (prev) {
+              m.visibility = prev.visibility;
+              m.vision_bridge_enabled = prev.vision_bridge_enabled;
+            }
+          });
           this.saveModelCatalog(catalog);
-          console.log(`[codex-gateway] Merged models: ${merged.length} total (${existingNames.size} kept, ${data.models.length} from input).`);
+          console.log(`[codex-gateway] Saved ${catalog.models.length} models (replaced catalog).`);
         }
 
         this.patchCodexConfig();
@@ -507,7 +519,21 @@ stream_idle_timeout_ms = 600000
       (async () => {
         try {
           const data = JSON.parse(body || "{}");
-          const result = await this.probeProvider(data.base_url, this.resolveKey(data.api_key || ""));
+          let baseUrl = data.base_url;
+          let apiKey = data.api_key || "";
+          // Support fetching by provider name (uses saved full credentials)
+          if (data.provider_name && !baseUrl) {
+            const prov = this.config.providers.find((p: ProviderConfig) => p.name === data.provider_name);
+            if (prov) {
+              baseUrl = prov.base_url;
+              apiKey = prov.api_key;
+            } else {
+              res.writeHead(400, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, error: "Provider not found: " + data.provider_name }));
+              return;
+            }
+          }
+          const result = await this.probeProvider(baseUrl, this.resolveKey(apiKey || ""));
           if (!result.ok) {
             res.writeHead(400, { "Content-Type": "application/json" });
             res.end(JSON.stringify(result));
@@ -533,6 +559,7 @@ stream_idle_timeout_ms = 600000
         catalog: catalog.models?.map((m: any) => ({
           id: m.slug,
           model: m.model,
+          provider: m.provider || '',
           display_name: m.display_name,
           no_image_support: m.input_modalities ? !m.input_modalities.includes("image") : true,
           vision_bridge_enabled: !!m.vision_bridge_enabled
@@ -546,11 +573,13 @@ stream_idle_timeout_ms = 600000
       try {
         const data = JSON.parse(body);
         const activeIds = data.active || [];
+        const visionBridgeIds = data.vision_bridge || [];
         const catalog = this.getModelCatalog();
-        
+
         if (catalog.models) {
           catalog.models.forEach((m: any) => {
             m.visibility = activeIds.includes(m.slug) ? "list" : "hide";
+            m.vision_bridge_enabled = visionBridgeIds.includes(m.slug);
           });
           this.saveModelCatalog(catalog);
         }
@@ -573,7 +602,7 @@ stream_idle_timeout_ms = 600000
         const slug = data.id;
         const catalog = this.getModelCatalog();
         if (catalog.models) {
-          catalog.models = catalog.models.filter((m: any) => m.slug !== slug && m.model !== slug);
+          catalog.models = catalog.models.filter((m: any) => m.slug !== slug);
           this.saveModelCatalog(catalog);
           console.log(`[codex-gateway] Deleted model: ${slug}`);
         }
