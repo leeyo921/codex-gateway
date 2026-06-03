@@ -6,10 +6,6 @@
   <img src="preview.png" alt="codex-gateway Dashboard" width="800">
 </p>
 
-<p align="center">
-  <a href="https://youtu.be/GvmXBZvvhuo">▶️ Watch Demo Video on YouTube</a>
-</p>
-
 ---
 
 # English
@@ -36,21 +32,42 @@
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- macOS
-- Node.js v18+
-- Codex Desktop installed
+### Option 1 — Download Pre-built Binary (No Node.js Required)
 
-### Install & Run
+Go to the [**Releases page**](https://github.com/leeyo921/codex-gateway/releases/latest) and download the binary for your platform:
+
+| Platform | File |
+|---|---|
+| Windows (x64) | `codex-gateway-windows-x64.exe` |
+| macOS (Apple Silicon) | `codex-gateway-macos-arm64` |
+
+**Windows**: double-click the `.exe`, or run it from the terminal:
+```bat
+codex-gateway-windows-x64.exe
+```
+
+**macOS**: make it executable, then run:
+```bash
+chmod +x codex-gateway-macos-arm64
+./codex-gateway-macos-arm64
+```
+
+The server starts and opens the dashboard in your browser automatically.
+
+---
+
+### Option 2 — Run from Source (Node.js v18+)
 
 ```bash
-git clone https://github.com/AITabby/codex-gateway.git
+git clone https://github.com/leeyo921/codex-gateway.git
 cd codex-gateway
 npm install
 npm start
 ```
 
-Server starts, browser opens to the dashboard. Add your API key and model names, click save — done.
+---
+
+After starting, open [http://localhost:8765/dashboard](http://localhost:8765/dashboard), add your API key and model names, click save — done.
 
 ---
 
@@ -78,18 +95,39 @@ Server starts, browser opens to the dashboard. Add your API key and model names,
 
 ## 🚀 快速上手
 
-### 准备工作
-- macOS 系统
-- Node.js v18+
-- 已安装 Codex Desktop
+### 方式一 — 下载预编译版本（无需安装 Node.js）
 
-### 安装与启动
+前往 [**Releases 页面**](https://github.com/leeyo921/codex-gateway/releases/latest) 下载对应平台的文件：
+
+| 平台 | 文件 |
+|---|---|
+| Windows (x64) | `codex-gateway-windows-x64.exe` |
+| macOS（Apple Silicon） | `codex-gateway-macos-arm64` |
+
+**Windows**：双击 `.exe` 直接运行，或在终端执行：
+```bat
+codex-gateway-windows-x64.exe
+```
+
+**macOS**：先赋予执行权限，再运行：
+```bash
+chmod +x codex-gateway-macos-arm64
+./codex-gateway-macos-arm64
+```
+
+启动后浏览器自动打开控制台。
+
+---
+
+### 方式二 — 源码运行（需要 Node.js v18+）
 
 ```bash
-git clone https://github.com/AITabby/codex-gateway.git
+git clone https://github.com/leeyo921/codex-gateway.git
 cd codex-gateway
 npm install
 npm start
 ```
 
-启动后浏览器自动打开控制台，填写 API Key 和模型名，保存即可使用。
+---
+
+启动后打开 [http://localhost:8765/dashboard](http://localhost:8765/dashboard)，填写 API Key 和模型名，保存即可使用。
