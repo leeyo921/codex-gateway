@@ -1236,7 +1236,7 @@ export function getDashboardHtml(): string {
     async function loadConfig() {
       try {
         const [configResp, modelsResp] = await Promise.all([
-          fetch('/v1/config'),
+          fetch('/api/providers'),
           fetch('/api/models')
         ]);
         const data = await configResp.json();

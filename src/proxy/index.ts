@@ -449,6 +449,15 @@ stream_idle_timeout_ms = 600000
       return;
     }
 
+    // ─── Dashboard-only: return FULL provider config (real keys) ───
+    // The dashboard needs the real api_key so that re-saving / testing does not
+    // round-trip the masked value from /v1/config and overwrite the real key.
+    if (path === "/api/providers" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ providers: this.config.providers }));
+      return;
+    }
+
     if (path === "/api/config" && req.method === "POST") {
       try {
         const data = JSON.parse(body);
